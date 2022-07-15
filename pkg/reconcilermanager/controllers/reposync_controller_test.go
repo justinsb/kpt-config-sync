@@ -224,6 +224,8 @@ func setupNSReconciler(t *testing.T, objs ...client.Object) (*syncerFake.Client,
 		t.Fatal(err)
 	}
 
+	imageRewriter := &ImageRewriter{}
+
 	fakeClient := syncerFake.NewClient(t, s, objs...)
 	testReconciler := NewRepoSyncReconciler(
 		testCluster,
@@ -232,6 +234,7 @@ func setupNSReconciler(t *testing.T, objs ...client.Object) (*syncerFake.Client,
 		fakeClient,
 		controllerruntime.Log.WithName("controllers").WithName("RepoSync"),
 		s,
+		imageRewriter,
 	)
 	return fakeClient, testReconciler
 }

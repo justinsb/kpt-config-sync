@@ -61,7 +61,7 @@ type RepoSyncReconciler struct {
 }
 
 // NewRepoSyncReconciler returns a new RepoSyncReconciler.
-func NewRepoSyncReconciler(clusterName string, reconcilerPollingPeriod, hydrationPollingPeriod time.Duration, client client.Client, log logr.Logger, scheme *runtime.Scheme) *RepoSyncReconciler {
+func NewRepoSyncReconciler(clusterName string, reconcilerPollingPeriod, hydrationPollingPeriod time.Duration, client client.Client, log logr.Logger, scheme *runtime.Scheme, imageRewriter *ImageRewriter) *RepoSyncReconciler {
 	return &RepoSyncReconciler{
 		reconcilerBase: reconcilerBase{
 			clusterName:             clusterName,
@@ -70,6 +70,7 @@ func NewRepoSyncReconciler(clusterName string, reconcilerPollingPeriod, hydratio
 			scheme:                  scheme,
 			reconcilerPollingPeriod: reconcilerPollingPeriod,
 			hydrationPollingPeriod:  hydrationPollingPeriod,
+			imageRewriter:           imageRewriter,
 		},
 		repoSyncs: make(map[types.NamespacedName]struct{}),
 	}
@@ -714,6 +715,12 @@ func (r *RepoSyncReconciler) mutationsFor(ctx context.Context, rs v1beta1.RepoSy
 		}
 
 		templateSpec.Containers = updatedContainers
+
+		for i := range templateSpec.Containers {
+			if err := r.imageRewriter.RewriteContainer(ctx, &templateSpec.Containers[i]); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 }

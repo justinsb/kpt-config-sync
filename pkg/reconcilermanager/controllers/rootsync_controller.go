@@ -70,7 +70,7 @@ type RootSyncReconciler struct {
 }
 
 // NewRootSyncReconciler returns a new RootSyncReconciler.
-func NewRootSyncReconciler(clusterName string, reconcilerPollingPeriod, hydrationPollingPeriod time.Duration, client client.Client, log logr.Logger, scheme *runtime.Scheme) *RootSyncReconciler {
+func NewRootSyncReconciler(clusterName string, reconcilerPollingPeriod, hydrationPollingPeriod time.Duration, client client.Client, log logr.Logger, scheme *runtime.Scheme, imageRewriter *ImageRewriter) *RootSyncReconciler {
 	return &RootSyncReconciler{
 		reconcilerBase: reconcilerBase{
 			clusterName:             clusterName,
@@ -79,6 +79,7 @@ func NewRootSyncReconciler(clusterName string, reconcilerPollingPeriod, hydratio
 			scheme:                  scheme,
 			reconcilerPollingPeriod: reconcilerPollingPeriod,
 			hydrationPollingPeriod:  hydrationPollingPeriod,
+			imageRewriter:           imageRewriter,
 		},
 	}
 }
@@ -607,6 +608,13 @@ func (r *RootSyncReconciler) mutationsFor(ctx context.Context, rs v1beta1.RootSy
 		}
 
 		templateSpec.Containers = updatedContainers
+
+		for i := range templateSpec.Containers {
+			if err := r.imageRewriter.RewriteContainer(ctx, &templateSpec.Containers[i]); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 }

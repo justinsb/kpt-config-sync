@@ -66,6 +66,8 @@ type reconcilerBase struct {
 	reconcilerPollingPeriod time.Duration
 	hydrationPollingPeriod  time.Duration
 	membership              *hubv1.Membership
+
+	imageRewriter *ImageRewriter
 }
 
 func (r *reconcilerBase) upsertServiceAccount(ctx context.Context, name, auth, email string, labelMap map[string]string, refs ...metav1.OwnerReference) error {

@@ -51,6 +51,9 @@ var (
 	hydrationPollingPeriod = flag.Duration("hydration-polling-period", controllers.PollingPeriod(reconcilermanager.HydrationPollingPeriod, configsync.DefaultHydrationPollingPeriod),
 		"How often the hydration-controller should poll the filesystem for rendering the DRY configs.")
 
+	remapImages = flag.String("image-remap", "",
+		"If specified, will remap the images according to the specified template.")
+
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
 )
@@ -89,9 +92,13 @@ func main() {
 
 	watchFleetMembership := fleetMembershipCRDExists(mgr.GetConfig(), mgr.GetRESTMapper())
 
+	imageRewriter := &controllers.ImageRewriter{
+		RewriteTemplate: *remapImages,
+	}
+
 	repoSync := controllers.NewRepoSyncReconciler(*clusterName, *reconcilerPollingPeriod, *hydrationPollingPeriod, mgr.GetClient(),
 		ctrl.Log.WithName("controllers").WithName("RepoSync"),
-		mgr.GetScheme())
+		mgr.GetScheme(), imageRewriter)
 	if err := repoSync.SetupWithManager(mgr, watchFleetMembership); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "RepoSync")
 		os.Exit(1)
@@ -99,7 +106,7 @@ func main() {
 
 	rootSync := controllers.NewRootSyncReconciler(*clusterName, *reconcilerPollingPeriod, *hydrationPollingPeriod, mgr.GetClient(),
 		ctrl.Log.WithName("controllers").WithName("RootSync"),
-		mgr.GetScheme())
+		mgr.GetScheme(), imageRewriter)
 	if err := rootSync.SetupWithManager(mgr, watchFleetMembership); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "RootSync")
 		os.Exit(1)

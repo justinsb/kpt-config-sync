@@ -124,6 +124,8 @@ func setupRootReconciler(t *testing.T, objs ...client.Object) (*syncerFake.Clien
 		t.Fatal(err)
 	}
 
+	imageRewriter := &ImageRewriter{}
+
 	fakeClient := syncerFake.NewClient(t, s, objs...)
 	testReconciler := NewRootSyncReconciler(
 		testCluster,
@@ -132,6 +134,7 @@ func setupRootReconciler(t *testing.T, objs ...client.Object) (*syncerFake.Clien
 		fakeClient,
 		controllerruntime.Log.WithName("controllers").WithName("RootSync"),
 		s,
+		imageRewriter,
 	)
 	return fakeClient, testReconciler
 }
@@ -2160,14 +2163,17 @@ func defaultContainers() []corev1.Container {
 		{
 			Name:      reconcilermanager.Reconciler,
 			Resources: defaultResourceRequirements(),
+			Image:     "gcr.io/config-management-release/reconciler:v1.2.3",
 		},
 		{
 			Name:      reconcilermanager.HydrationController,
 			Resources: defaultResourceRequirements(),
+			Image:     "gcr.io/config-management-release/hydration-controller:v1.2.3",
 		},
 		{
 			Name:      reconcilermanager.GitSync,
 			Resources: defaultResourceRequirements(),
+			Image:     "gcr.io/config-management-release/gitsync:v1.2.3",
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: "repo", MountPath: "/repo"},
 				{Name: "git-creds", MountPath: "/etc/git-secret", ReadOnly: true},
@@ -2176,6 +2182,7 @@ func defaultContainers() []corev1.Container {
 		{
 			Name:      reconcilermanager.OciSync,
 			Resources: defaultResourceRequirements(),
+			Image:     "gcr.io/config-management-release/ocisync:v1.2.3",
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: "repo", MountPath: "/repo"},
 			},
